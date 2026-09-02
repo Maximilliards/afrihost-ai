@@ -148,6 +148,11 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
               <div className="text-right">
                 <span className="text-slate-600 text-[11px]">Hébergement attribué :</span>
                 <div className="font-bold text-slate-900">{transaction.propertyName}</div>
+                {transaction.roomCategoryName && (
+                  <div className="text-[11px] font-semibold text-emerald-800 font-mono">
+                    {transaction.roomCategoryName}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -165,7 +170,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <tbody className="divide-y divide-slate-200 text-slate-800">
               <tr>
                 <td className="p-2.5">
-                  <div className="font-bold text-slate-900">{transaction.propertyName}</div>
+                  <div className="font-bold text-slate-900">
+                    {transaction.propertyName} {transaction.roomCategoryName ? `— ${transaction.roomCategoryName}` : ''}
+                  </div>
                   <div className="text-[10px] text-slate-500">
                     Prestation meublée avec autonomie groupe électrogène, forage & Starlink
                   </div>

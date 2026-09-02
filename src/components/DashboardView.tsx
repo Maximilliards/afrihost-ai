@@ -423,15 +423,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </span>
                   </div>
                   <div className="absolute top-2 right-2">
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${
-                      prop.status === 'available'
-                        ? 'bg-emerald-500/90 text-white'
-                        : 'bg-amber-500/90 text-slate-950'
-                    }`}>
-                      {prop.status === 'available' ? 'Disponible' : 'Occupé'}
-                    </span>
+                    {prop.propertyKind === 'hotel_residence' ? (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-emerald-500/90 text-slate-950">
+                        {prop.availableRooms}/{prop.totalRooms} Dispo
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-md ${
+                        prop.status === 'available'
+                          ? 'bg-emerald-500/90 text-white'
+                          : 'bg-amber-500/90 text-slate-950'
+                      }`}>
+                        {prop.status === 'available' ? 'Disponible' : 'Occupé'}
+                      </span>
+                    )}
                   </div>
                   <div className="absolute bottom-2 right-2 bg-slate-950/90 px-2 py-1 rounded-md text-xs font-mono font-extrabold text-amber-300 border border-slate-800">
+                    {prop.propertyKind === 'hotel_residence' && <span className="text-[10px] font-sans font-normal text-slate-400 mr-1">Dès</span>}
                     {formatFCFA(prop.pricePerNight)} <span className="text-[10px] text-slate-400 font-sans font-normal">/nuit</span>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Smartphone, 
   X, 
@@ -9,15 +9,17 @@ import {
   AlertCircle, 
   Receipt,
   PhoneCall,
-  Lock
+  Lock,
+  Layers
 } from 'lucide-react';
-import { Property, PaymentProvider, Transaction } from '../types';
+import { Property, PaymentProvider, Transaction, RoomCategory } from '../types';
 import { formatFCFA, calculateFinancialBreakdown, formatPhoneNumber } from '../utils/formatters';
 
 interface USSDPushModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedProperty?: Property | null;
+  selectedRoomCategory?: RoomCategory | null;
   properties: Property[];
   onTransactionSuccess: (tx: Transaction) => void;
   onOpenReceipt: (tx: Transaction) => void;
@@ -27,6 +29,7 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
   isOpen,
   onClose,
   selectedProperty,
+  selectedRoomCategory,
   properties,
   onTransactionSuccess,
   onOpenReceipt,
@@ -35,12 +38,28 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
 
   const [provider, setProvider] = useState<PaymentProvider>('MTN_MOMO');
   const [propertyId, setPropertyId] = useState<string>(selectedProperty?.id || properties[0]?.id || '');
+  const [roomCategory, setRoomCategory] = useState<RoomCategory | null>(selectedRoomCategory || null);
   const [guestName, setGuestName] = useState('Samuel Eto\'o Jr');
   const [guestPhone, setGuestPhone] = useState('+237 677 88 99 00');
   const [nights, setNights] = useState(3);
+
+  // Sync when selectedProperty or selectedRoomCategory props change
+  useEffect(() => {
+    if (selectedProperty) {
+      setPropertyId(selectedProperty.id);
+      if (selectedRoomCategory) {
+        setRoomCategory(selectedRoomCategory);
+      } else if (selectedProperty.roomCategories && selectedProperty.roomCategories.length > 0) {
+        setRoomCategory(selectedProperty.roomCategories[0]);
+      } else {
+        setRoomCategory(null);
+      }
+    }
+  }, [selectedProperty, selectedRoomCategory]);
   
   const currentProp = properties.find(p => p.id === propertyId) || properties[0];
-  const grossAmount = (currentProp?.pricePerNight || 85000) * nights;
+  const unitPrice = roomCategory ? roomCategory.pricePerNight : (currentProp?.pricePerNight || 85000);
+  const grossAmount = unitPrice * nights;
   const breakdown = calculateFinancialBreakdown(grossAmount, provider);
 
   // USSD Push Flow States: 'input' -> 'pushing' -> 'ussd_dialog' -> 'pin_entry' -> 'success'
@@ -66,6 +85,7 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
         id: `tx-237-${Date.now().toString().slice(-6)}`,
         propertyId: currentProp.id,
         propertyName: currentProp.name,
+        roomCategoryName: roomCategory ? `${roomCategory.name}` : undefined,
         guestName,
         guestPhone,
         provider,
@@ -96,7 +116,7 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="relative bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-fade-in text-slate-100">
+      <div className="relative bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl animate-fade-in text-slate-100 my-8">
         
         {/* Modal Close Button */}
         <button
@@ -196,31 +216,78 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-400 font-semibold mb-1">Résidence Meublée</label>
+                <label className="block text-slate-400 font-semibold mb-1">Hébergement / Établissement</label>
                 <select
                   value={propertyId}
-                  onChange={(e) => setPropertyId(e.target.value)}
+                  onChange={(e) => {
+                    const pId = e.target.value;
+                    setPropertyId(pId);
+                    const prop = properties.find(p => p.id === pId);
+                    if (prop?.roomCategories && prop.roomCategories.length > 0) {
+                      setRoomCategory(prop.roomCategories[0]);
+                    } else {
+                      setRoomCategory(null);
+                    }
+                  }}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500 text-xs cursor-pointer"
                 >
                   {properties.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.city}) — {formatFCFA(p.pricePerNight)}/nuit
+                      {p.name} ({p.city}) — {p.propertyKind === 'hotel_residence' ? 'Hôtel Multi-chambres' : formatFCFA(p.pricePerNight)}
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-slate-400 font-semibold mb-1">Nombre de Nuitées</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={nights}
-                  onChange={(e) => setNights(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500 text-xs"
-                />
-              </div>
+              {/* If property has room categories */}
+              {currentProp.roomCategories && currentProp.roomCategories.length > 0 ? (
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1 flex items-center gap-1">
+                    <Layers className="w-3.5 h-3.5 text-purple-400" />
+                    Catégorie de Chambre / Suite
+                  </label>
+                  <select
+                    value={roomCategory?.id || ''}
+                    onChange={(e) => {
+                      const cat = currentProp.roomCategories?.find(c => c.id === e.target.value);
+                      if (cat) setRoomCategory(cat);
+                    }}
+                    className="w-full bg-slate-950 border border-purple-900/60 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500 text-xs cursor-pointer"
+                  >
+                    {currentProp.roomCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name} — {formatFCFA(cat.pricePerNight)} ({cat.availableInventory} dispo)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Nombre de Nuitées</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={nights}
+                    onChange={(e) => setNights(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500 text-xs"
+                  />
+                </div>
+              )}
+
+              {currentProp.roomCategories && currentProp.roomCategories.length > 0 && (
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Nombre de Nuitées</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={nights}
+                    onChange={(e) => setNights(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500 text-xs"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Financial Breakdown Table */}
@@ -234,7 +301,9 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
 
               <div className="space-y-1.5 pt-2 text-xs">
                 <div className="flex justify-between text-slate-300">
-                  <span>Hébergement ({nights} nuits x {formatFCFA(currentProp.pricePerNight)}) :</span>
+                  <span>
+                    {roomCategory ? `${roomCategory.name}` : currentProp.name} ({nights} nuits x {formatFCFA(unitPrice)}) :
+                  </span>
                   <span className="font-mono font-bold text-white">{formatFCFA(breakdown.grossAmount)}</span>
                 </div>
 
@@ -284,20 +353,18 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
           </div>
         )}
 
-        {/* Step 3: Interactive Phone Screen Mockup for USSD Prompt */}
+        {/* Step 3: Interactive Phone Screen Mockup */}
         {step === 'ussd_dialog' && (
           <div className="py-4 flex flex-col items-center">
-            {/* Phone Screen Mockup */}
             <div className="w-80 bg-slate-950 rounded-3xl border-4 border-slate-700 p-5 space-y-4 shadow-2xl relative overflow-hidden">
               <div className="w-20 h-4 bg-slate-800 rounded-full mx-auto mb-2"></div>
               
-              {/* USSD Modal Dialog on Phone */}
               <div className="bg-slate-900 rounded-2xl p-4 border border-amber-500/40 space-y-3 text-center">
                 <div className="text-xs font-mono font-bold text-amber-400">
                   {provider === 'MTN_MOMO' ? 'MTN Mobile Money (*126#)' : 'Orange Money (*150#)'}
                 </div>
                 <p className="text-xs text-slate-200 leading-relaxed">
-                  Autorisez-vous le débit de <strong className="text-white font-mono">{formatFCFA(breakdown.grossAmount)}</strong> par <strong className="text-emerald-400">AfriHostAI SARL</strong> pour {currentProp.name} ({nights} nuits) ?
+                  Autorisez-vous le débit de <strong className="text-white font-mono">{formatFCFA(breakdown.grossAmount)}</strong> par <strong className="text-emerald-400">AfriHostAI SARL</strong> pour {roomCategory ? roomCategory.name : currentProp.name} ({nights} nuits) ?
                 </p>
                 <div className="text-[10px] text-slate-400">
                   TTA DGI (0.2%) : {formatFCFA(breakdown.ttaTax)}
@@ -374,12 +441,17 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
               </p>
             </div>
 
-            {/* Receipt Summary Box */}
             <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs space-y-2 text-left max-w-md mx-auto">
               <div className="flex justify-between">
                 <span className="text-slate-400">Référence :</span>
                 <strong className="text-white font-mono">{completedTx.reference}</strong>
               </div>
+              {completedTx.roomCategoryName && (
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Catégorie réservée :</span>
+                  <strong className="text-purple-300 font-semibold">{completedTx.roomCategoryName}</strong>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-400">Montant Débité :</span>
                 <strong className="text-amber-300 font-mono font-bold">{formatFCFA(completedTx.amount)}</strong>
@@ -394,7 +466,6 @@ export const USSDPushModal: React.FC<USSDPushModalProps> = ({
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <button
                 onClick={() => {

@@ -3,9 +3,22 @@ import {
   MOCK_PROPERTIES, 
   MOCK_TRANSACTIONS, 
   MOCK_LEADS, 
-  MOCK_LOGISTICS_TASKS 
+  MOCK_LOGISTICS_TASKS,
+  MOCK_OUTBOUND_CONTACTS,
+  DEFAULT_SAAS_SETTINGS
 } from './data/mockData';
-import { Property, Transaction, Lead, LogisticsTask, City, LeadQualification } from './types';
+import { 
+  Property, 
+  Transaction, 
+  InboundLead, 
+  OutboundContact, 
+  LogisticsTask, 
+  City, 
+  LeadQualification,
+  SaasSettings,
+  SaasPlanType,
+  RoomCategory
+} from './types';
 import { Navbar } from './components/Navbar';
 import { DashboardView } from './components/DashboardView';
 import { PropertiesView } from './components/PropertiesView';
@@ -14,6 +27,7 @@ import { LeadsPipelineView } from './components/LeadsPipelineView';
 import { LogisticsView } from './components/LogisticsView';
 import { USSDPushModal } from './components/USSDPushModal';
 import { ReceiptModal } from './components/ReceiptModal';
+import { SettingsModal } from './components/SettingsModal';
 import { formatFCFA } from './utils/formatters';
 
 export function App() {
@@ -23,12 +37,16 @@ export function App() {
   // App Global Data State
   const [properties, setProperties] = useState<Property[]>(MOCK_PROPERTIES);
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [inboundLeads, setInboundLeads] = useState<InboundLead[]>(MOCK_LEADS);
+  const [outboundContacts, setOutboundContacts] = useState<OutboundContact[]>(MOCK_OUTBOUND_CONTACTS);
   const [logisticsTasks, setLogisticsTasks] = useState<LogisticsTask[]>(MOCK_LOGISTICS_TASKS);
+  const [saasSettings, setSaasSettings] = useState<SaasSettings>(DEFAULT_SAAS_SETTINGS);
 
   // Modal states
   const [isUSSDOpen, setIsUSSDOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedPropertyForUSSD, setSelectedPropertyForUSSD] = useState<Property | null>(null);
+  const [selectedRoomCategoryForUSSD, setSelectedRoomCategoryForUSSD] = useState<RoomCategory | null>(null);
   const [selectedReceiptTx, setSelectedReceiptTx] = useState<Transaction | null>(null);
   const [selectedChatProperty, setSelectedChatProperty] = useState<Property | null>(null);
 
@@ -38,8 +56,9 @@ export function App() {
   }, [transactions]);
 
   // Handle USSD Trigger from any view
-  const handleOpenUSSD = (prop?: Property) => {
+  const handleOpenUSSD = (prop?: Property, roomCategory?: RoomCategory) => {
     setSelectedPropertyForUSSD(prop || null);
+    setSelectedRoomCategoryForUSSD(roomCategory || null);
     setIsUSSDOpen(true);
   };
 
@@ -55,7 +74,7 @@ export function App() {
   };
 
   // Handle selecting a lead to chat with
-  const handleSelectLeadForChat = (lead: Lead) => {
+  const handleSelectLeadForChat = (lead: InboundLead) => {
     const matchedProp = properties.find(p => p.id === lead.recommendedPropertyId);
     setSelectedChatProperty(matchedProp || null);
     setCurrentTab('chat');
@@ -64,6 +83,11 @@ export function App() {
   // Handle new transaction from USSD simulator
   const handleTransactionSuccess = (newTx: Transaction) => {
     setTransactions(prev => [newTx, ...prev]);
+  };
+
+  // Handle adding new property or hotel
+  const handleAddProperty = (newProp: Property) => {
+    setProperties(prev => [newProp, ...prev]);
   };
 
   // Handle new logistics task
@@ -82,7 +106,7 @@ export function App() {
 
   // Handle lead qualification from AI
   const handleLeadQualified = (qualification: LeadQualification) => {
-    const newLead: Lead = {
+    const newLead: InboundLead = {
       id: `lead-${Date.now().toString().slice(-4)}`,
       name: 'Prospect WhatsApp IA',
       phone: '+237 699 12 34 56',
@@ -99,7 +123,23 @@ export function App() {
       lastMessage: qualification.summary,
       lastMessageTime: 'À l\'instant',
     };
-    setLeads(prev => [newLead, ...prev]);
+    setInboundLeads(prev => [newLead, ...prev]);
+  };
+
+  // Handle importing outbound contacts from CSV
+  const handleImportContacts = (newContacts: OutboundContact[]) => {
+    setOutboundContacts(prev => [...newContacts, ...prev]);
+  };
+
+  // Handle paying subscription by USSD
+  const handlePaySubscriptionUSSD = (plan: SaasPlanType, amount: number) => {
+    setIsSettingsOpen(false);
+    handleOpenUSSD();
+    setSaasSettings(prev => ({
+      ...prev,
+      plan: plan,
+      renewalDate: '2026-10-02'
+    }));
   };
 
   const criticalTasksCount = logisticsTasks.filter(t => t.status !== 'completed' && (t.urgency === 'critical' || t.urgency === 'high')).length;
@@ -115,7 +155,9 @@ export function App() {
         setSelectedCity={setSelectedCity}
         totalTTAAccumulated={totalTTAAccumulated}
         openUSSDModal={() => handleOpenUSSD()}
-        unreadLeadsCount={leads.filter(l => l.status === 'hot').length}
+        openSettingsModal={() => setIsSettingsOpen(true)}
+        saasPlan={saasSettings.plan}
+        unreadLeadsCount={inboundLeads.filter(l => l.status === 'hot').length}
         criticalTasksCount={criticalTasksCount}
       />
 
@@ -125,7 +167,7 @@ export function App() {
           <DashboardView
             properties={properties}
             transactions={transactions}
-            leads={leads}
+            leads={inboundLeads}
             selectedCity={selectedCity}
             onOpenReceipt={handleOpenReceipt}
             onOpenUSSD={handleOpenUSSD}
@@ -141,6 +183,7 @@ export function App() {
             setSelectedCity={setSelectedCity}
             onOpenUSSD={handleOpenUSSD}
             onSelectForChat={handleSelectPropertyForChat}
+            onAddProperty={handleAddProperty}
           />
         )}
 
@@ -155,11 +198,13 @@ export function App() {
 
         {currentTab === 'leads' && (
           <LeadsPipelineView
-            leads={leads}
+            inboundLeads={inboundLeads}
+            outboundContacts={outboundContacts}
             properties={properties}
             selectedCity={selectedCity}
             onOpenWhatsApp={handleSelectLeadForChat}
             onOpenUSSD={handleOpenUSSD}
+            onImportContacts={handleImportContacts}
           />
         )}
 
@@ -180,7 +225,7 @@ export function App() {
           <div className="flex items-center gap-2">
             <span>🇨🇲</span>
             <span className="font-bold text-slate-400">AfriHostAI Cameroun</span>
-            <span>— Plateforme de gestion de meublés premium & conformité DGI</span>
+            <span>— Plateforme de gestion de meublés, résidences & hôtels conforme DGI</span>
           </div>
           <div className="flex items-center gap-4 text-[11px]">
             <span>Taxe TTA 0.2% Active</span>
@@ -199,6 +244,7 @@ export function App() {
         isOpen={isUSSDOpen}
         onClose={() => setIsUSSDOpen(false)}
         selectedProperty={selectedPropertyForUSSD}
+        selectedRoomCategory={selectedRoomCategoryForUSSD}
         properties={properties}
         onTransactionSuccess={handleTransactionSuccess}
         onOpenReceipt={handleOpenReceipt}
@@ -208,6 +254,15 @@ export function App() {
       <ReceiptModal
         transaction={selectedReceiptTx}
         onClose={() => setSelectedReceiptTx(null)}
+      />
+
+      {/* Settings & SaaS Subscription Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={saasSettings}
+        onUpdateSettings={setSaasSettings}
+        onPaySubscriptionUSSD={handlePaySubscriptionUSSD}
       />
 
     </div>

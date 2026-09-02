@@ -12,9 +12,11 @@ import {
   Activity,
   Layers,
   Fuel,
-  Users
+  Users,
+  Settings,
+  CreditCard
 } from 'lucide-react';
-import { City } from '../types';
+import { City, SaasPlanType } from '../types';
 import { formatFCFA } from '../utils/formatters';
 
 interface NavbarProps {
@@ -24,6 +26,8 @@ interface NavbarProps {
   setSelectedCity: (city: City) => void;
   totalTTAAccumulated: number;
   openUSSDModal: () => void;
+  openSettingsModal: () => void;
+  saasPlan: SaasPlanType;
   unreadLeadsCount: number;
   criticalTasksCount: number;
 }
@@ -35,6 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setSelectedCity,
   totalTTAAccumulated,
   openUSSDModal,
+  openSettingsModal,
+  saasPlan,
   unreadLeadsCount,
   criticalTasksCount
 }) => {
@@ -86,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 flex items-center gap-1">
-                <span>Gestion Meublés & Conciergerie IA</span>
+                <span>Gestion Meublés & Hôtels IA</span>
               </p>
             </div>
           </div>
@@ -142,7 +148,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Leads CRM</span>
+              <span>Leads & Prospection</span>
               {unreadLeadsCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
                   {unreadLeadsCount}
@@ -168,8 +174,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </nav>
 
-          {/* Right Action Widgets: City filter, TTA Counter, Quick USSD */}
-          <div className="flex items-center gap-3">
+          {/* Right Action Widgets: City filter, TTA Counter, Settings, Quick USSD */}
+          <div className="flex items-center gap-2 sm:gap-3">
             
             {/* City Selector */}
             <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs">
@@ -204,6 +210,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
+            {/* Settings & SaaS Subscription Button */}
+            <button
+              onClick={openSettingsModal}
+              className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:text-white transition-colors"
+              title="Paramètres de l'établissement et Abonnement SaaS"
+            >
+              <Settings className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden xl:inline font-semibold">Paramètres</span>
+              <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 uppercase">
+                {saasPlan}
+              </span>
+            </button>
+
             {/* USSD Simulator Quick Button */}
             <button
               onClick={openUSSDModal}
@@ -215,11 +234,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Status Pill */}
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-400">
+            <div className="hidden 2xl:flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-400">
               <span className={`w-2 h-2 rounded-full ${backendHealth?.hasGeminiApiKey ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <span className="hidden xl:inline">
-                {backendHealth?.hasGeminiApiKey ? 'Gemini 3.7 Live' : 'AI Active'}
-              </span>
+              <span>Gemini 3.7 Live</span>
             </div>
 
           </div>
@@ -242,7 +259,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               currentTab === 'properties' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400'
             }`}
           >
-            Propriétés
+            Propriétés & Hôtels
           </button>
           <button
             onClick={() => setCurrentTab('chat')}
@@ -258,7 +275,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               currentTab === 'leads' ? 'bg-emerald-500/20 text-emerald-300' : 'text-slate-400'
             }`}
           >
-            Leads ({unreadLeadsCount})
+            Leads & Prospection ({unreadLeadsCount})
           </button>
           <button
             onClick={() => setCurrentTab('logistics')}

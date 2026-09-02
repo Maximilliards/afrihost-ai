@@ -177,11 +177,14 @@ ${text}`
 function findBestMatchingProperty(text: string, selectedCity?: string) {
   const lower = text.toLowerCase();
   
+  if (lower.includes('wouri') || lower.includes('grand wouri') || (lower.includes('douala') && (lower.includes('hotel') || lower.includes('hôtel') || lower.includes('suite') || lower.includes('chambre')))) {
+    return MOCK_PROPERTIES.find(p => p.id === 'prop-douala-hotel-01') || MOCK_PROPERTIES[1];
+  }
+  if (lower.includes('palace') || lower.includes('residence bastos') || (lower.includes('yaoundé') && (lower.includes('appart-hôtel') || lower.includes('studio meublé') || lower.includes('résidence')))) {
+    return MOCK_PROPERTIES.find(p => p.id === 'prop-yaounde-residence-01') || MOCK_PROPERTIES[2];
+  }
   if (lower.includes('bastos') || (lower.includes('yaoundé') && (lower.includes('villa') || lower.includes('ambassade') || lower.includes('135')))) {
     return MOCK_PROPERTIES.find(p => p.id === 'prop-yaounde-01');
-  }
-  if (lower.includes('omnisport') || lower.includes('loft') || (lower.includes('yaoundé') && lower.includes('45'))) {
-    return MOCK_PROPERTIES.find(p => p.id === 'prop-yaounde-02');
   }
   if (lower.includes('bonapriso') || (lower.includes('douala') && (lower.includes('piscine') || lower.includes('120')))) {
     return MOCK_PROPERTIES.find(p => p.id === 'prop-douala-01');
@@ -210,26 +213,29 @@ function generateHeuristicReply(prompt: string, selectedCity?: string) {
   let suggestedProperty = findBestMatchingProperty(prompt, selectedCity);
 
   if (lower.includes('bonjour') || lower.includes('salut') || lower.includes('hello') || lower.includes('bonsoir')) {
-    reply = `Bonjour et bienvenue chez **AfriHostAI Cameroun** 🇨🇲 !\n\nNous mettons à votre disposition des hébergements meublés grand standing avec autonomie totale garantie :\n⚡ **Groupe électrogène automatique** (0 coupure)\n💧 **Forage & réserve d'eau filtrée**\n🛰️ **Internet Starlink Très Haut Débit**\n\nDans quelle ville préparez-vous votre séjour (Douala, Yaoundé, Kribi, Limbé) ?`;
+    reply = `Bonjour et bienvenue chez **AfriHostAI Cameroun** 🇨🇲 !\n\nNous gérons des **villas meublées privatives** ainsi que des **hôtels & résidences multi-chambres** avec triple garantie :\n⚡ **Groupe électrogène automatique (0 coupure Eneo)**\n💧 **Forage & réserve d'eau filtrée**\n🛰️ **Internet Starlink Très Haut Débit**\n\nDans quelle ville préparez-vous votre séjour (Douala, Yaoundé, Kribi, Limbé) ?`;
+  } else if (lower.includes('hotel') || lower.includes('hôtel') || lower.includes('suite') || lower.includes('wouri') || (lower.includes('douala') && lower.includes('chambre'))) {
+    suggestedProperty = MOCK_PROPERTIES.find(p => p.id === 'prop-douala-hotel-01') || MOCK_PROPERTIES[1];
+    reply = `Parfait ! À **Douala**, nous vous proposons l'**${suggestedProperty?.name}** (28 clés en plein quartier des affaires Bonanjo/Akwa).\n\n🏨 **Catégories disponibles :**\n- **Chambre Deluxe Affaires :** 55 000 FCFA / nuit\n- **Suite Exécutive VIP Wouri :** 95 000 FCFA / nuit\n- **Suite Présidentielle :** 165 000 FCFA / nuit\n\n⚡ Groupe industriel 120 kVA, Forage 15 000L, Restaurant gastronomique & Navette aéroport Douala.\n\nQuelle catégorie de chambre souhaitez-vous réserver ?`;
   } else if (lower.includes('bastos') || lower.includes('yaounde') || lower.includes('yaoundé')) {
-    suggestedProperty = MOCK_PROPERTIES.find(p => p.id === 'prop-yaounde-01') || MOCK_PROPERTIES[2];
-    reply = `Excellente option ! À **Yaoundé**, nous vous recommandons notre **${suggestedProperty?.name}** à Bastos (proche ambassades).\n\n✨ **Tarif :** 135 000 FCFA / nuit\n⚡ Groupe électrogène 80 kVA insonorisé\n💧 Cuve 8000L + forage automatique\n🛰️ Starlink 250 Mbps & Piscine\n🚗 Navette aéroport Yaoundé-Nsimalen disponible.\n\nSouhaitez-vous bloquer vos dates ou lancer une réservation par MTN MoMo / Orange Money ?`;
+    suggestedProperty = MOCK_PROPERTIES.find(p => p.id === 'prop-yaounde-01') || MOCK_PROPERTIES[4];
+    reply = `Excellente option ! À **Yaoundé**, nous vous recommandons notre **${suggestedProperty?.name}** à Bastos (proche ambassades) ou notre **Résidence Hôtelière Bastos Palace** (dès 45 000 FCFA/nuit).\n\n✨ **Tarif :** 135 000 FCFA / nuit\n⚡ Groupe électrogène 80 kVA insonorisé\n💧 Cuve 8000L + forage automatique\n🛰️ Starlink 250 Mbps & Piscine\n🚗 Navette aéroport Yaoundé-Nsimalen disponible.\n\nSouhaitez-vous bloquer vos dates ou lancer une réservation par MTN MoMo / Orange Money ?`;
   } else if (lower.includes('bonapriso') || lower.includes('douala') || lower.includes('akwa')) {
     suggestedProperty = MOCK_PROPERTIES.find(p => p.id === 'prop-douala-01') || MOCK_PROPERTIES[0];
-    reply = `Pour votre séjour à **Douala**, la **${suggestedProperty?.name}** à Bonapriso est notre hébergement le plus prisé !\n\n✨ **Tarif :** 120 000 FCFA / nuit (3 chambres climatisées, piscine)\n⚡ Groupe automatique 60 kVA (relais immédiat sans coupure)\n💧 Réserve d'eau 5000L avec surpresseur\n🚗 Navette direct aéroport de Douala (DLA)\n\nNous acceptons les paiements instantanés MTN MoMo, Orange Money et virements internationaux.`;
+    reply = `Pour votre séjour à **Douala**, la **${suggestedProperty?.name}** à Bonapriso est notre villa meublée la plus prisée !\n\n✨ **Tarif :** 120 000 FCFA / nuit (3 chambres climatisées, piscine)\n⚡ Groupe automatique 60 kVA (relais immédiat sans coupure)\n💧 Réserve d'eau 5000L avec surpresseur\n🚗 Navette direct aéroport de Douala (DLA)\n\nNous acceptons les paiements instantanés MTN MoMo, Orange Money et virements internationaux.`;
   } else if (lower.includes('kribi') || lower.includes('plage') || lower.includes('mer')) {
-    suggestedProperty = MOCK_PROPERTIES.find(p => p.id === 'prop-kribi-01') || MOCK_PROPERTIES[4];
+    suggestedProperty = MOCK_PROPERTIES.find(p => p.id === 'prop-kribi-01') || MOCK_PROPERTIES[5];
     reply = `Une escapade à la mer ? Notre **${suggestedProperty?.name}** à Kribi (Ngoye Plage) dispose d'un accès direct au sable blanc 🏖️.\n\n✨ **Tarif :** 95 000 FCFA / nuit\n⚡ Groupe électrogène 45 kVA\n💧 Forage et eau douce assurés\n🦞 Barbecue de crevettes face à l'océan\n\nCombien de nuits souhaitez-vous réserver pour votre séjour ?`;
   } else if (lower.includes('groupe') || lower.includes('eneo') || lower.includes('lumiere') || lower.includes('courant') || lower.includes('electricité')) {
-    reply = `⚡ **Zéro souci d'électricité chez AfriHostAI !**\n\nToutes nos résidences sont équipées de groupes électrogènes diesel automatiques (30kVA à 80kVA) reliés à un inverseur de source automatique. Dès qu'Eneo coupe, le groupe démarre en moins de 10 secondes. Vos appareils, climatiseurs et connexions Starlink restent alimentés en continu.`;
+    reply = `⚡ **Zéro souci d'électricité chez AfriHostAI !**\n\nTous nos meublés et complexes hôteliers sont équipés de groupes électrogènes diesel automatiques (30kVA à 120kVA) reliés à un inverseur de source automatique. Dès qu'Eneo coupe, le groupe démarre en moins de 10 secondes. Climatiseurs et connexions Starlink restent alimentés en continu.`;
   } else if (lower.includes('eau') || lower.includes('forage') || lower.includes('camwater')) {
-    reply = `💧 **Autonomie totale en eau garantie !**\n\nChaque propriété possède son propre forage avec cuve de stockage (2000L à 8000L), filtre antitartre/antibactérien et surpresseur pour garantir une pression d'eau optimale et de l'eau chaude 24h/24 dans toutes les salles de bains.`;
+    reply = `💧 **Autonomie totale en eau garantie !**\n\nChaque établissement possède son propre forage avec cuve de stockage (2000L à 15000L), filtre antitartre/antibactérien et surpresseur pour garantir une pression d'eau optimale 24h/24.`;
   } else if (lower.includes('paiement') || lower.includes('momo') || lower.includes('orange') || lower.includes('prix') || lower.includes('payer')) {
     reply = `💳 **Modalités de paiement au Cameroun :**\n\n1. **MTN Mobile Money (*126#)** - 1% de frais opérateur + 0.2% TTA (Taxe sur les Transferts Électroniques)\n2. **Orange Money (*150#)** - 1% de frais opérateur + 0.2% TTA\n3. **Virement bancaire / Cartes internationales** pour la diaspora\n\nChaque paiement génère un reçu fiscal certifié AfriHostAI conforme aux normes DGI Cameroun.`;
   } else if (lower.includes('navette') || lower.includes('aeroport') || lower.includes('nsimalen') || lower.includes('dla')) {
     reply = `🚗 **Accueil & Navette Aéroport VIP :**\n\nNotre chauffeur privé vous attend à la sortie des terminaux de Douala International (DLA) ou Yaoundé-Nsimalen (NSI) avec pancarte nominative et véhicule climatisé avec Wi-Fi à bord. Service inclus pour tout séjour de 5 nuits et plus !`;
   } else {
-    reply = `Merci pour votre message ! Chez **AfriHostAI**, nous garantissons votre confort absolu à Douala, Yaoundé, Kribi et Limbé avec groupe électrogène automatique, forage autonome et Wi-Fi Starlink.\n\n✨ Nous proposons des appartements et villas de 45 000 FCFA à 135 000 FCFA / nuit. Quel est votre budget et vos dates souhaitées ?`;
+    reply = `Merci pour votre message ! Chez **AfriHostAI**, nous garantissons votre confort absolu à Douala, Yaoundé, Kribi et Limbé avec groupe électrogène automatique, forage autonome et Wi-Fi Starlink.\n\n✨ Nous proposons des studios, villas et suites d'hôtel de 45 000 FCFA à 165 000 FCFA / nuit. Quel est votre budget et vos dates souhaitées ?`;
   }
 
   return {
